@@ -16,6 +16,11 @@ global.XMLSerializer = global.window.XMLSerializer;
 
 const templateEngine = new Liquid();
 
+// Resolve a resource's path relative to the manifest.
+export function relativeResourcePath(manifestUrl, resourceUrl) {
+	return path.posix.relative(path.posix.dirname(manifestUrl), resourceUrl);
+}
+
 class ManifestToEpub {
 	constructor(url, options={}) {
 		this.settings = {
@@ -54,8 +59,7 @@ class ManifestToEpub {
 
 		for (const [key, value] of this.manifest.uniqueResources) {
 			let item = value.data;
-			let dir = path.dirname(this.url);
-			item.url = path.relative(dir, key);
+			item.url = relativeResourcePath(this.url, key);
 
 			if (!item.encoding) {
 				item.encoding = mime.lookup(item.url);
@@ -122,11 +126,10 @@ class ManifestToEpub {
 
 		for (const [key] of this.manifest.uniqueResources) {
 			let filePath = fileURLToPath(key);
-			let dir = path.dirname(this.url);
-			let relative = path.relative(dir, key);
+			let relative = relativeResourcePath(this.url, key);
 			let content;
 
-			if (path.extname(relative) === ".html") {
+			if (path.posix.extname(relative) === ".html") {
 				content = await fs.promises.readFile(filePath, "utf-8");
 				content = this.convertToXML(content);
 			} else {
